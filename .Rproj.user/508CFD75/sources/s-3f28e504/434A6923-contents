@@ -856,6 +856,8 @@ xgboost_preds %>%
 
 # Apply to new data
 
+> Up to here.  Error message is Error: Can't subset columns that don't exist. x Column `damaged` doesn't exist.
+
 ```{r}
 have_scored <- cbind(to_score, predict(xgboost_fit$.workflow[[1]], to_score)) %>%
   select(id, damaged = .pred)
