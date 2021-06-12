@@ -3,7 +3,7 @@
     "path": "/cloud/project/s01e02.rmd",
     "project_path": "s01e02.rmd",
     "type": "r_markdown",
-    "hash": "780852899",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1623229341382.0,
@@ -12,16 +12,16 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "858,33",
-        "scrollLine": "855",
-        "last_setup_crc32": "3f28e504f55b2e52"
+        "cursorPosition": "848,0",
+        "scrollLine": "841",
+        "last_setup_crc32": ""
     },
     "folds": "",
-    "lastKnownWriteTime": 1623494800,
+    "lastKnownWriteTime": 1623538385,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1623494800170,
+    "last_content_update": 1623538621430,
     "read_only": false,
     "read_only_alternatives": []
 }

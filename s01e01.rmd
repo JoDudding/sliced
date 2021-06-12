@@ -17,6 +17,7 @@ output:
     includes:
       in_header: "header.html"
       after_body: "footer.html"
+    keep_md: true  
 
 ---
 
@@ -658,7 +659,7 @@ skim(baked)
 # Specify model
 
 ```{r}
-spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 1500) %>%
+spec <- rand_forest(mtry = 35, min_n = 12, trees = 1500) %>%
   set_mode("regression") %>%
   set_engine("ranger")
 ```
@@ -675,7 +676,9 @@ wkflow
 
 # Tune
 
-```{r}
+Tuning happened but won't be included because it took so long.  
+
+```{r, eval = FALSE}
 set.seed(530)
 train_folds <- vfold_cv(train)
 
@@ -704,9 +707,14 @@ autoplot(ranger_tune) +
 
 # Finalise model
 
+The results were:
+
+- mtry = 35
+- min_n = 12
+
 ```{r}
-final_wkflow <- wkflow %>%
-  finalize_workflow(select_best(ranger_tune, metric = "rmse"))
+final_wkflow <- wkflow #%>%
+  #finalize_workflow(select_best(ranger_tune, metric = "rmse"))
 
 final_wkflow
 ```

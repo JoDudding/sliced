@@ -11,6 +11,7 @@ output:
     includes:
       in_header: "header.html"
       after_body: "footer.html"
+    keep_md: true  
 
 ---
 
@@ -86,6 +87,7 @@ library(gt)
 library(lubridate)
 library(glue)
 library(themis)
+library(credentials)
 ```
 
 # My settings
@@ -686,6 +688,7 @@ explore_char(flight_impact)
 set.seed(728)
 
 to_build <- to_build %>% 
+  filter(! is.na(damaged)) %>% 
   mutate(damaged = factor(damaged, levels = c(1, 0)))
 
 split <- initial_split(to_build, strata = damaged)
@@ -705,12 +708,8 @@ train_folds <- vfold_cv(train, 5)
 
 ```{r}
 rec <- recipe(damaged ~ ., data = train) %>%
-  #recipe(damaged ~ speed + height + distance + incident_year + incident_month,
-  #  data = train) %>% 
   # id role
   update_role(id, new_role = "ID") %>%
-  # damaged not missing
-  step_filter(! is.na(damaged)) %>% 
   # create variables
   step_mutate(
     speed = if_else(speed > 500, 500, speed)
@@ -733,7 +732,7 @@ rec <- recipe(damaged ~ ., data = train) %>%
   # imputation of missing values
   step_impute_mean(height, speed, distance) %>% 
   # character to factors
-  step_string2factor(all_nominal()) %>% 
+  step_string2factor(all_nominal_predictors()) %>% 
   # explicit na
   step_unknown(all_nominal_predictors()) %>% 
   # handle new classes
@@ -742,8 +741,6 @@ rec <- recipe(damaged ~ ., data = train) %>%
   step_other(all_nominal_predictors()) %>% 
   # all numeric
   step_dummy(all_nominal_predictors()) %>% 
-  # missing values for factors
-  step_impute_lower(all_numeric_predictors()) %>% 
   # remove if zero variance
   step_zv(all_predictors()) %>% 
   # rebalance
@@ -773,7 +770,8 @@ xgboost_spec <- boost_tree(
     sample_size = 0.648717504832894
   ) %>% 
   set_mode("classification") %>% 
-  set_engine("xgboost")
+  set_engine("xgboost") %>%
+  set_args(importance = "impurity")
 ```
 
 # Specify workflow
@@ -827,6 +825,7 @@ final_wkflow <- xgboost_workflow #%>%
 final_wkflow
 ```
 
+
 # Fit model
 
 ```{r}
@@ -856,23 +855,31 @@ xgboost_preds %>%
 
 # Apply to new data
 
-> Up to here.  Error message is Error: Can't subset columns that don't exist. x Column `damaged` doesn't exist.
 
 ```{r}
-have_scored <- cbind(to_score, predict(xgboost_fit$.workflow[[1]], to_score)) %>%
-  select(id, damaged = .pred)
+have_scored <- cbind(
+    to_score %>% select(id), 
+    predict(xgboost_fit$.workflow[[1]], to_score, type = 'prob')
+  ) %>%
+  select(id, damaged = .pred_1)
 ```
 
 # Output submission
 
 ```{r}
-write_csv(have_scored, 'sliced/s01e02/submission.csv')
+write_csv(have_scored, 's01e02/submission.csv')
 ```
 
 # Outcome
 
+Score of 0.42
 
+# Learnings
 
-# Possible improvements
+- Check whether the submission is for class or probability and use `type = 'prob'` in the `predict()` statement for the latter. `r emo::ji('palm')`
+- Used several new steps
 
-- 
+# More to learn
+
+- Get the variable name into the chart titles when using a function
+- Look at variable importance
