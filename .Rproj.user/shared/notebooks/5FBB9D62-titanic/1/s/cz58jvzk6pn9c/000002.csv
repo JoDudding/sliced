@@ -1,0 +1,5 @@
+"0","set.seed(539)"
+"0",""
+"0","split <- initial_split(to_build, strata = survived)"
+"0","train <- training(split)"
+"0","test <- testing(split)"

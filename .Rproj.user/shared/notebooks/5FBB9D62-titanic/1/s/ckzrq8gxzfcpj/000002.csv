@@ -1,0 +1,7 @@
+"0","xgboost_spec <- "
+"0","  boost_tree(trees = tune(), min_n = tune(), tree_depth = tune(),"
+"0","             learn_rate = tune(), "
+"0","    loss_reduction = tune(), sample_size = tune()) %>% "
+"0","  set_mode(""classification"") %>% "
+"0","  set_engine(""xgboost"") "
+"0",""

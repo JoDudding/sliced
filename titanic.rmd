@@ -1,0 +1,635 @@
+---
+title: Titanic
+author: Jo Dudding
+output: 
+  html_document:
+    theme: united
+    highlight: kate
+    toc: true
+    toc_float: 
+      collapsed: true
+---
+
+```{r setup, include = FALSE, echo = FALSE}
+#-------------------------------------------------------------------------------
+#' set knitr options
+#-------------------------------------------------------------------------------
+
+knitr::opts_knit$set(
+  #root.dir = ".."
+)
+
+knitr::opts_chunk$set(
+  fig.width = 19 / 2.54,
+  fig.height = 13.4 / 2.54,
+  fig.retina = 4,
+  comment = '',
+  warning = FALSE
+)
+```
+
+```{css, echo = FALSE}
+h1, h2, h3, h4, h5, h6, legend {
+  color: #5F187F;
+}
+
+h1.title {
+    font-size: 38px;
+    background-color: #5F187F;
+    color: #ffffff;
+    margin-bottom: 20px;
+    padding: 9.5px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-radius: 10px;
+}
+
+pre {
+  background-color: #E2BCFF;
+}
+
+a {
+  color: #FEBA80;
+}
+
+.hljs-comment {
+    color: #5F187F;
+    font-style: 68e199;
+}
+
+.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+    z-index: 2;
+    color: #ffffff;
+    background-color: #5F187F;
+    border-color: #5F187F;
+}
+```
+
+Predict the whether the passengers on the Titanic survived.
+
+[Kaggle link](https://www.kaggle.com/c/titanic/overview)
+
+# Load libraries
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(tidymodels)
+library(scales)
+library(skimr)
+library(kableExtra)
+library(themis)
+
+# colours
+pal_sliced <- c(viridisLite::magma(8)[2:8], "#4C4C53", "#9B9BA8")
+
+title_colour <- pal_sliced[2]
+table_colour <- pal_sliced[2]
+bar_colour <- pal_sliced[2]
+grid_colour <- pal_sliced[9]
+
+theme_set(theme_bw() %+replace%
+    theme(
+      # align title and caption to the plot not the panel
+      plot.title.position = 'plot',
+      plot.caption.position = 'plot',
+      # change the title and caption to markdown and move them futher from the plot
+      plot.title = element_text(
+        size = rel(1.3),
+        hjust = 0, 
+        margin = margin(c(0, 0, 10, 0)),
+        colour = title_colour
+      ),
+      plot.subtitle = element_text(
+        size = rel(1.15),
+        hjust = 0, 
+        margin = margin(c(0, 0, 15, 0))
+      ),
+      plot.caption = element_text(
+        hjust = 1, 
+        margin = margin(c(10, 0, 0, 0))
+      ),
+      # move axis titles to the left/top and change them to markdown
+      axis.title = element_text(hjust = 1),
+      # allow the axis values to the markdown as well
+      axis.text = element_text(),
+      # remove the panel border
+      panel.border = element_blank(),
+      # put in the axis lines with a slightly thicker line than the gridlines
+      axis.line = element_line(colour = grid_colour, size = rel(1.5)),
+      # make the tickmarks the same colour
+      axis.ticks = element_line(colour = grid_colour),
+      # facet strip text left aligned with extra space above
+      strip.text = element_text(
+        hjust = 0, margin = margin(c(10, 0, 0, 0)), colour = title_colour
+      ),
+      # clear colour and fill for strip
+      strip.background = element_rect(colour = NA, fill = NA),
+      # dotted gridlines
+      panel.grid = element_line(linetype = 'dotted'),
+      # ability to use a different colour for the gridlines
+      panel.grid.major.x = element_line(colour = grid_colour),
+      panel.grid.major.y = element_line(colour = grid_colour),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+    )
+)
+
+scale_y_pct <- function(
+  accuracy = 1L, 
+  breaks = pretty_breaks(),
+  expand = expansion(mult = c(0, .05)),
+  ...
+) {
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = accuracy, big.mark = ","),
+    breaks = breaks,
+    expand = expand,
+    ...
+  )
+}
+
+scale_y_comma <- function(
+  accuracy = 1L, 
+  breaks = pretty_breaks(),
+  expand = expansion(mult = c(0, .05)),
+  ...
+) {
+  scale_y_continuous(
+    labels = scales::comma_format(accuracy = accuracy),
+    breaks = breaks,
+    expand = expand,
+    ...
+  )
+}
+
+scale_fill_jo <- function(...) {
+  scale_fill_manual(values = pal_sliced, ...)
+}
+
+scale_fill_discrete <- scale_fill_jo
+
+update_geom_defaults("bar", list(fill = bar_colour))
+update_geom_defaults("col", list(fill = bar_colour))
+update_geom_defaults("point", list(colour = bar_colour))
+update_geom_defaults("line", list(colour = bar_colour))
+```
+
+
+# Read files
+
+```{r}
+to_build <- read_csv("titanic/train.csv", guess_max = 200000) %>%
+  janitor::clean_names() %>%
+  mutate(
+    survived = factor(if_else(survived == 1, 'Survived', 'Died'), 
+      levels = c('Survived', 'Died')),
+    pclass = factor(pclass)  
+    )
+
+to_score <- read_csv("titanic/test.csv", guess_max = 200000)  %>%
+  janitor::clean_names() %>%
+  mutate(
+    pclass = factor(pclass)  
+    )
+```
+
+# Examine data
+
+```{r}
+skim(to_build)
+```
+
+## Target - survived
+
+```{r}
+summary(to_build$survived)
+
+to_build %>%
+  count(survived) %>%
+  mutate(pct = n / sum(n)) %>%
+  kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+
+```
+
+## Passenger class 
+
+```{r}
+ggplot(to_build, aes(pclass, fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Passenger class', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(pclass, fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Passenger class', x = NULL, y = NULL, fill = 'Survived')
+```
+
+## Sex 
+
+```{r}
+ggplot(to_build, aes(sex, fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Sex', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(sex, fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Sex', x = NULL, y = NULL, fill = 'Survived')
+```
+
+
+## Ticket 
+
+- too many unique values
+- doesn't look to be a common prefix
+- ones with letters in them may be different
+
+```{r}
+summary(to_build$ticket)
+
+to_build %>%
+  count(ticket, sort = TRUE) %>%
+  mutate(pct = n / sum(n))
+
+to_build %>%
+  count(str_sub(ticket, 1, 2), sort = TRUE) %>%
+  mutate(pct = n / sum(n)) %>%
+  slice(1:20)
+
+to_build %>%
+  count(str_detect(ticket, '[A-Za-z]'), sort = TRUE) %>%
+  mutate(pct = n / sum(n))
+
+ggplot(to_build, aes(str_detect(ticket, '[A-Za-z]'), fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Alpha ticket', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(str_detect(ticket, '[A-Za-z]'), fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Alpha ticket', x = NULL, y = NULL, fill = 'Survived')
+```
+
+## Cabin 
+
+- use first character
+- NA values
+
+```{r}
+to_build %>%
+  count(cabin, sort = TRUE) %>%
+  mutate(pct = n / sum(n))
+
+ggplot(to_build, aes(str_sub(cabin, 1, 1), fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Cabin', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(str_sub(cabin, 1, 1), fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Cabin', x = NULL, y = NULL, fill = 'Survived')
+```
+
+## Embarked
+
+- NA values
+
+```{r}
+ggplot(to_build, aes(embarked, fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Embarked', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(embarked, fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Embarked', x = NULL, y = NULL, fill = 'Survived')
+```  
+
+## Number of siblings / spouses
+
+```{r}
+summary(to_build$sib_sp)
+
+ggplot(to_build, aes(sib_sp, fill = survived)) +
+  geom_histogram(binwidth = 1) +
+  scale_y_comma() +
+  labs(title = 'Number of siblings / spouses', x = NULL, y = NULL, 
+    fill = 'Survived')
+
+ggplot(to_build, aes(sib_sp, fill = survived)) +
+  geom_histogram(binwidth = 1, position = 'fill')  +
+  scale_y_pct() +
+  labs(title = 'Number of siblings / spouses', x = NULL, y = NULL, fill = 'Survived')
+```  
+
+## Number of parents / children
+
+```{r}
+summary(to_build$parch)
+
+ggplot(to_build, aes(parch, fill = survived)) +
+  geom_histogram(binwidth = 1) +
+  scale_y_comma() +
+  labs(title = 'Number of parents / children', x = NULL, y = NULL, 
+    fill = 'Survived')
+
+ggplot(to_build, aes(parch, fill = survived)) +
+  geom_histogram(binwidth = 1, position = 'fill')  +
+  scale_y_pct() +
+  labs(title = 'Number of parents / children', x = NULL, y = NULL, fill = 'Survived')
+```  
+
+## Age
+
+- NAs
+- flag children
+
+```{r}
+summary(to_build$age)
+
+ggplot(to_build, aes(age, fill = survived)) +
+  geom_histogram(binwidth = 5, center = 2.5) +
+  scale_y_comma() +
+  labs(title = 'Age', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(age, fill = survived)) +
+  geom_histogram(binwidth = 5, center = 2.5, position = 'fill')  +
+  scale_y_pct() +
+  labs(title = 'Age', x = NULL, y = NULL, fill = 'Survived')
+```
+
+## Fare
+
+- log scale (has zeros)
+- flag for free and then impute?
+
+```{r}
+summary(to_build$fare)
+
+ggplot(to_build, aes(fare+0.1, fill = survived)) +
+  geom_histogram(bins = 40) +
+  scale_y_comma() +
+  scale_x_log10() +
+  labs(title = 'Fare', x = NULL, y = NULL, fill = 'Survived')
+
+ggplot(to_build, aes(fare+0.1, fill = survived)) +
+  geom_histogram(bins = 40, position = 'fill') +
+  scale_y_pct() +
+  scale_x_log10() +
+  labs(title = 'Fare', x = NULL, y = NULL, fill = 'Survived')
+```
+
+## Name
+
+- get title
+
+```{r}
+to_build %>%
+  slice_sample(n = 20) %>%
+  select(name) %>%
+    kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+
+title <- to_build %>%
+  select(name, survived) %>%
+  mutate(
+    comma_loc = str_locate(name, ',')[,1],
+    dot_loc = str_locate(name, '\\.')[,1],
+    surname = str_sub(name, 1, comma_loc - 1),
+    title = str_sub(name, comma_loc + 2, dot_loc - 1),
+    title = fct_rev(fct_infreq(title))
+  )
+
+title %>%
+  count(title, sort = TRUE) %>%
+  mutate(pct = n / sum(n)) %>%
+    kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+
+ggplot(title, aes(title, fill = survived)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Title', x = NULL, y = NULL, fill = 'Survived') +
+  coord_flip()
+
+ggplot(title, aes(title, fill = survived)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(title = 'Title', x = NULL, y = NULL, fill = 'Survived')+
+  coord_flip()
+
+
+```
+
+# Split in to train and test
+
+```{r}
+set.seed(539)
+
+split <- initial_split(to_build, strata = survived)
+train <- training(split)
+test <- testing(split)
+```
+
+# Create recipe
+
+```{r}
+xgboost_recipe <- recipe(survived ~ ., data = train) %>%
+  # id
+  update_role(passenger_id, new_role = 'id') %>% 
+  # rebalance
+  step_upsample(survived) %>% 
+  step_mutate(
+    # ticket contains alpha
+    ticket = as.numeric(str_detect(ticket, '[A-Za-z]')),
+    # cabin prefix and na
+    cabin = replace_na(str_sub(cabin, 1, 1), 'Z'),
+    # missing embarked
+    embarked = replace_na(embarked, 'S'),
+    # zero fare
+    zero_fare = as.numeric(fare == 0),
+    # get title
+    title = str_sub(name, str_locate(name, ',')[,1] + 2, 
+      str_locate(name, '\\.')[,1] - 1),
+
+  ) %>% 
+  # strings to factors
+  step_string2factor(all_nominal_predictors()) %>% 
+  # reduce the number of groups for title
+  step_other(title, threshold = 0.02) %>% 
+  # fare to log
+  step_log(fare, offset = 0.1) %>% 
+  # remove unneeded
+  step_rm(name) %>%
+  # imputation
+  step_impute_knn(age) %>%
+  # handle new categories
+  step_novel(all_nominal(), -all_outcomes()) %>%
+  # factors
+  step_dummy(all_nominal_predictors()) %>% 
+  # zero variance
+  step_zv(all_predictors())
+```             
+             
+# Check recipe outputs
+
+```{r}
+prepped <- prep(xgboost_recipe)
+baked <- bake(prepped, new_data = NULL) 
+
+skim(baked)  
+```
+
+# Specify model
+
+```{r}
+xgboost_spec <- 
+  boost_tree(trees = 1000, min_n = tune(), tree_depth = tune(),
+             learn_rate = tune(), 
+    loss_reduction = tune(), sample_size = tune()) %>% 
+  set_mode("classification") %>% 
+  set_engine("xgboost") 
+
+```
+
+# Specify workflow
+
+```{r}
+xgboost_workflow <- 
+  workflow() %>% 
+  add_recipe(xgboost_recipe) %>% 
+  add_model(xgboost_spec) 
+
+xgboost_workflow  
+```
+
+# Tune
+
+```{r}
+set.seed(530)
+train_folds <- vfold_cv(train)
+
+#doParallel::registerDoParallel()
+
+set.seed(90234)
+xgboost_tune <-
+  tune_grid(xgboost_workflow, resamples = train_folds, grid = 19)
+
+```
+
+# Select best
+
+```{r}
+show_best(xgboost_tune, metric = "accuracy") %>%
+  kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+
+autoplot(xgboost_tune) +
+  theme_bw()
+```
+
+# Finalise model
+
+```{r}
+final_wkflow <- xgboost_workflow %>%
+  finalize_workflow(select_best(xgboost_tune, metric = "accuracy"))
+
+final_wkflow
+```
+
+# Fit model
+
+```{r}
+xgboost_fit <- last_fit(final_wkflow, split)
+```
+
+# Check performance
+
+```{r}
+collect_metrics(xgboost_fit) %>%
+  kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+```
+
+> Add confusion matrix and roc curve
+
+# Get predictions
+
+```{r}
+xgboost_preds <- collect_predictions(xgboost_fit)
+
+#xgboost_preds %>%
+#  ggplot(aes(survived, .pred)) +
+#  geom_abline(lty = 2, colour = pal_sliced[3]) +
+#  geom_point(alpha = 0.5) +
+#  coord_fixed() +
+#  labs(title = 'Predicted vs actual')
+```
+
+# Apply to new data
+
+```{r}
+have_scored <- cbind(to_score, predict(xgboost_fit$.workflow[[1]], to_score)) %>%
+  select(PassengerId = passenger_id, Survived = .pred_class) %>% 
+  mutate(Survived = if_else(Survived == 'Survived', 1, 0))
+```
+
+# Output submission
+
+```{r}
+write_csv(have_scored, 'titanic/submission.csv')
+```
+
+# Outcome
+
+
+
+# Possible improvements
+
+

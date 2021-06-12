@@ -1,0 +1,562 @@
+---
+title: SLICED s01e02
+author: Jo Dudding
+output: 
+  html_document:
+    theme: united
+    highlight: kate
+    toc: true
+    toc_float: 
+      collapsed: true
+    includes:
+      in_header: "../sliced/header.html"
+      after_body: "../sliced/footer.html"
+
+---
+
+```{r setup, include = FALSE, echo = FALSE}
+#-------------------------------------------------------------------------------
+#' set knitr options
+#-------------------------------------------------------------------------------
+
+knitr::opts_knit$set(
+  root.dir = ".."
+)
+
+knitr::opts_chunk$set(
+  fig.width = 19 / 2.54,
+  fig.height = 13.4 / 2.54,
+  fig.retina = 4,
+  comment = '',
+  warning = FALSE
+)
+```
+
+```{css, echo = FALSE}
+h1, h2, h3, h4, h5, h6, legend {
+  color: #302df0;
+}
+
+h1.title {
+    font-size: 38px;
+    background-color: #e946a5;
+    color: #ffffff;
+    margin-bottom: 20px;
+    padding: 9.5px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-radius: 10px;
+}
+
+pre {
+  background-color: #cccccc;
+}
+
+a {
+  color: #129875;
+}
+
+.hljs-comment {
+    color: #68e199;
+    font-style: 68e199;
+}
+
+.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+    z-index: 2;
+    color: #ffffff;
+    background-color: #68e199;
+    border-color: #68e199;
+}
+```
+
+Predict whether an aircraft strike with wildlife causes damage
+
+[Kaggle link](https://www.kaggle.com/c/sliced-s01e02-xunyc5)
+
+[Twitch link](https://www.twitch.tv/nickwan_datasci)
+
+# Load libraries
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(tidymodels)
+library(scales)
+library(skimr)
+library(kableExtra)
+library(patchwork)
+
+# colours
+#pal_jo <- c(viridisLite::magma(8)[2:8], "#4C4C53", "#9B9BA8")
+
+pal_sliced <- c(
+  '#e946a5', # pink
+  '#68e199', # green
+  '#302df0', # blue
+  '#6a45b0', # purple
+  '#129875', # darker green
+  '#4f94bf', # lighter blue
+  '#b545ab', # darker pink
+  '#000000', # black,
+  '#cccccc'  #grey
+)
+
+title_colour <- pal_sliced[1]
+table_colour <- pal_sliced[4]
+bar_colour <- pal_sliced[2]
+grid_colour <- pal_sliced[9]
+
+theme_set(theme_bw() %+replace%
+    theme(
+      # align title and caption to the plot not the panel
+      plot.title.position = 'plot',
+      plot.caption.position = 'plot',
+      # change the title and caption to markdown and move them futher from the plot
+      plot.title = element_text(
+        size = rel(1.3),
+        hjust = 0, 
+        margin = margin(c(0, 0, 10, 0)),
+        colour = title_colour
+      ),
+      plot.subtitle = element_text(
+        size = rel(1.15),
+        hjust = 0, 
+        margin = margin(c(0, 0, 15, 0))
+      ),
+      plot.caption = element_text(
+        hjust = 1, 
+        margin = margin(c(10, 0, 0, 0))
+      ),
+      # move axis titles to the left/top and change them to markdown
+      axis.title = element_text(hjust = 1),
+      # allow the axis values to the markdown as well
+      axis.text = element_text(),
+      # remove the panel border
+      panel.border = element_blank(),
+      # put in the axis lines with a slightly thicker line than the gridlines
+      axis.line = element_line(colour = grid_colour, size = rel(1.5)),
+      # make the tickmarks the same colour
+      axis.ticks = element_line(colour = grid_colour),
+      # facet strip text left aligned with extra space above
+      strip.text = element_text(
+        hjust = 0, margin = margin(c(10, 0, 0, 0)), colour = title_colour
+      ),
+      # clear colour and fill for strip
+      strip.background = element_rect(colour = NA, fill = NA),
+      # dotted gridlines
+      panel.grid = element_line(linetype = 'dotted'),
+      # ability to use a different colour for the gridlines
+      panel.grid.major.x = element_line(colour = grid_colour),
+      panel.grid.major.y = element_line(colour = grid_colour),
+      panel.grid.minor.x = element_blank(),
+      panel.grid.minor.y = element_blank(),
+    )
+)
+
+scale_y_pct <- function(
+  accuracy = 1L, 
+  breaks = pretty_breaks(),
+  expand = expansion(mult = c(0, .05)),
+  ...
+) {
+  scale_y_continuous(
+    labels = scales::percent_format(accuracy = accuracy, big.mark = ","),
+    breaks = breaks,
+    expand = expand,
+    ...
+  )
+}
+
+scale_y_comma <- function(
+  accuracy = 1L, 
+  breaks = pretty_breaks(),
+  expand = expansion(mult = c(0, .05)),
+  ...
+) {
+  scale_y_continuous(
+    labels = scales::comma_format(accuracy = accuracy),
+    breaks = breaks,
+    expand = expand,
+    ...
+  )
+}
+
+scale_fill_jo <- function(...) {
+  scale_fill_manual(values = pal_sliced, ...)
+}
+
+scale_fill_discrete <- scale_fill_jo
+
+update_geom_defaults("bar", list(fill = bar_colour))
+update_geom_defaults("col", list(fill = bar_colour))
+update_geom_defaults("point", list(colour = bar_colour))
+update_geom_defaults("line", list(colour = bar_colour))
+```
+
+
+# Read files
+
+```{r}
+to_build <- read_csv("s01e02/train.csv", guess_max = 200000) %>%
+  glimpse() 
+to_score <- read_csv("s01e02/test.csv", guess_max = 200000) %>%
+  glimpse()
+```
+
+# Examine data
+
+```{r}
+skim(to_build)
+```
+
+```{r}
+explore_build <- to_build %>% 
+  filter(! is.na(damaged)) %>% 
+  mutate(damaged = factor(damaged))
+
+```
+
+
+## Target - damaged
+
+- unbalanced
+- was a missing value
+
+```{r}
+summary(explore_build$damaged)
+
+ggplot(explore_build, aes(damaged)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(title = 'Damaged', x = NULL, y = NULL, fill = 'Damaged')
+```
+
+
+## Function for exploration
+
+
+```{r}
+
+explore_num <- function(x, bins = 30){
+
+#summary(to_build[x])
+#  summary(to_build[[incident_year]])       
+
+a <- explore_build %>% 
+  mutate(is_it_na = if_else(is.na({{x}}), 'NA', 'Present')) %>% 
+ggplot(aes(is_it_na, fill = damaged)) +
+  geom_bar() +
+  scale_y_comma() +
+  labs(x = NULL, y = NULL, fill = 'Damaged')
+
+b <- explore_build %>% 
+  mutate(is_it_na = if_else(is.na({{x}}), 'NA', 'Present')) %>% 
+ggplot(aes(is_it_na, fill = damaged)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  labs(x = NULL, y = NULL, fill = 'Damaged')
+
+c <- ggplot(explore_build, aes({{x}}, fill = damaged)) +
+  geom_histogram(bins = bins) +
+  scale_y_comma() +
+  labs(x = NULL, y = NULL, fill = 'Damaged')
+
+d <- ggplot(explore_build, aes({{x}}, fill = damaged)) +
+  geom_histogram(bins = bins, position = 'fill') +
+  scale_y_pct() +
+  labs(x = NULL, y = NULL, fill = 'Damaged')
+
+(a + b) / (c + d)
+
+}
+
+```
+
+## incident_year
+
+
+```{r}
+#skim(explore_build)
+explore_num(incident_year)
+
+```  
+
+## distance
+
+
+```{r}
+#skim(explore_build)
+explore_num(distance)
+
+``` 
+
+## Time
+
+```{r}
+explore_num(log(distance))
+```
+
+
+# Create recipe
+
+```{r}
+rec <- recipe(damaged ~ ., data = train) %>%
+  # id role for game_id
+  update_role(game_id, new_role = "ID") %>%
+  # flags for categories
+  step_mutate(
+    
+    cat_card_game = if_any(starts_with("cate"), ~ .x == "Card Game"),
+    cat_card_game =as.numeric( replace_na(cat_card_game, FALSE)),
+    
+    cat_wargame = if_any(starts_with("cate"), ~ .x == "Wargame"),
+    cat_wargame = as.numeric(replace_na(cat_wargame, FALSE)),
+    
+    cat_fantasy = if_any(starts_with("cate"), ~ .x == "Fantasy"),
+    cat_fantasy = as.numeric(replace_na(cat_fantasy, FALSE)),
+    
+    cat_economic = if_any(starts_with("cate"), ~ .x == "Economic"),
+    cat_economic = as.numeric(replace_na(cat_economic, FALSE)),
+    
+    cat_fighting = if_any(starts_with("cate"), ~ .x == "Fighting"),
+    cat_fighting = as.numeric(replace_na(cat_fighting, FALSE)),
+    
+    cat_science_fiction = if_any(starts_with("cate"), ~ .x == 
+      "Science Fiction"),
+    cat_science_fiction = as.numeric(replace_na(cat_science_fiction, FALSE)),
+    
+    cat_dice = if_any(starts_with("cate"), ~ .x == "Dice"),
+    cat_dice = as.numeric(replace_na(cat_dice, FALSE)),
+    
+    cat_bluffing = if_any(starts_with("cate"), ~ .x == "Bluffing"),
+    cat_bluffing = as.numeric(replace_na(cat_bluffing, FALSE)),
+    
+    cat_adventure = if_any(starts_with("cate"), ~ .x == "Adventure"),
+    cat_adventure = as.numeric(replace_na(cat_adventure, FALSE)),
+    
+    cat_miniatures = if_any(starts_with("cate"), ~ .x == "Miniatures"),
+    cat_miniatures = as.numeric(replace_na(cat_miniatures, FALSE)),
+    
+    cat_ww2 = if_any(starts_with("cate"), ~ .x == "World War II"),
+    cat_ww2 = as.numeric(replace_na(cat_ww2, FALSE)),
+    
+    cat_medieval = if_any(starts_with("cate"), ~ .x == "Medieval"),
+    cat_medieval = as.numeric(replace_na(cat_medieval, FALSE)),
+    
+    cat_explor = if_any(starts_with("cate"), ~ .x == "Exploration"),
+    cat_explor = as.numeric(replace_na(cat_explor, FALSE)),
+    
+    cat_deduct = if_any(starts_with("cate"), ~ .x == "Deduction"),
+    cat_deduct = as.numeric(replace_na(cat_deduct, FALSE)),
+    
+    cat_party = if_any(starts_with("cate"), ~ .x == "Party Game"),
+    cat_party = as.numeric(replace_na(cat_party, FALSE)),
+    
+    cat_abstract = if_any(starts_with("cate"), ~ .x == "Abstract Strategy"),
+    cat_abstract = as.numeric(replace_na(cat_abstract, FALSE)),
+    
+    cat_animals = if_any(starts_with("cate"), ~ .x == "Animals"),
+    cat_animals = as.numeric(replace_na(cat_animals, FALSE))
+  ) %>%
+  # flags for mechanic
+  step_mutate(
+    mech_dice = as.numeric(str_detect(mechanic, "Dice Rolling")),
+    mech_hand = as.numeric(str_detect(mechanic, "Hand Management" )),
+    mech_powers = as.numeric(str_detect(mechanic, "Variable Player Powers")),
+    mech_sets = as.numeric(str_detect(mechanic, "Set Collection")),
+    mech_infl = as.numeric(str_detect(mechanic, 
+      "Area Control / Area Influence")),
+    mech_draft = as.numeric(str_detect(mechanic, "Card Drafting")),
+    mech_modular = as.numeric(str_detect(mechanic, "Modular Board")),
+    mech_tile = as.numeric(str_detect(mechanic, "Tile Placement")),
+    mech_hex = as.numeric(str_detect(mechanic, "Hex-and-Counter")),
+    mech_action = as.numeric(str_detect(mechanic, 
+      "Action Point Allowance System")),
+    mech_coop = as.numeric(str_detect(mechanic, "Co-operative Play")),
+    mech_sas = as.numeric(str_detect(mechanic, 
+      "Simultaneous Action Selection")),
+    mech_auction = as.numeric(str_detect(mechanic, "Auction/Bidding")),
+    mech_area = as.numeric(str_detect(mechanic, "Area Movement")),
+    mech_worker = as.numeric(str_detect(mechanic, "Worker Placement")),
+    mech_grid = as.numeric(str_detect(mechanic, "Grid Movement")),
+    mech_simul = as.numeric(str_detect(mechanic, "Simulation")),
+    mech_deck = as.numeric(str_detect(mechanic, "Deck / Pool Building")),
+    mech_partner = as.numeric(str_detect(mechanic, "Partnerships")),
+    mech_point = as.numeric(str_detect(mechanic, "Point to Point Movement")),
+    mech_route = as.numeric(str_detect(mechanic, "Route/Network Building"))  
+  ) %>%
+  # flags for mechanic
+  step_mutate(
+    design_1 = as.numeric(str_detect(designer, "Reiner Knizia")),
+    design_2 = as.numeric(str_detect(designer, "Martin Wallace")),
+    design_3 = as.numeric(str_detect(designer, "Wolfgang Kramer")),
+    design_4 = as.numeric(str_detect(designer, "Dean Essig")),
+    design_5 = as.numeric(str_detect(designer, "Alan R. Moon")),
+    design_6 = as.numeric(str_detect(designer, "Bruno Cathala")),
+    design_7 = as.numeric(str_detect(designer, "Friedemann Friese")),
+    design_8 = as.numeric(str_detect(designer, "Mike Elliott")),
+    design_9 = as.numeric(str_detect(designer, "Klaus Teuber")),
+    design_10 = as.numeric(str_detect(designer, "Richard H. Berg"))
+  ) %>%
+  # remove the name, designer, mechanic and category variables
+  step_rm(names, mechanic, designer, category1:category12) %>%
+  # log transformation
+  step_log(num_votes, owned) %>%
+  # outliers
+  step_mutate(
+    min_players = case_when(
+      min_players == 0 ~ as.numeric(NA), 
+      min_players > 20 ~ 20,
+      TRUE ~ min_players
+    ),
+    max_players = case_when(
+      max_players == 0 ~ as.numeric(NA), 
+      max_players > 20 ~ 20,
+      TRUE ~ max_players
+    ),
+    min_time = case_when(
+      min_time == 0 ~ as.numeric(NA),
+      min_time > 240 ~ 240,
+      TRUE ~ min_time
+    ),
+    max_time = case_when(
+      max_time == 0 ~ as.numeric(NA),
+      max_time > 240 ~ 240,
+      TRUE ~ max_time
+    ),
+    avg_time = case_when(
+      avg_time == 0 ~ as.numeric(NA),
+      avg_time > 240 ~ 240,
+      TRUE ~ avg_time
+    ),
+    year = case_when(
+        year == 0 ~ as.numeric(NA), 
+        year < 1900 ~ 1900,
+        TRUE ~ year
+    )
+  ) %>%
+  # imputation
+  step_impute_mean(min_players, max_players, year, min_time, max_time, avg_time)
+```
+
+# Check recipe outputs
+
+```{r}
+prepped <- prep(rec)
+baked <- bake(prepped, new_data = NULL) 
+
+skim(baked)  
+```
+
+# Specify model
+
+```{r}
+spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 1500) %>%
+  set_mode("regression") %>%
+  set_engine("ranger")
+```
+
+# Specify workflow
+
+```{r}
+wkflow <- workflow() %>%
+  add_recipe(rec) %>%
+  add_model(spec)
+
+wkflow  
+```
+
+# Tune
+
+```{r}
+set.seed(530)
+train_folds <- vfold_cv(train)
+
+set.seed(3621)
+doParallel::registerDoParallel()
+ranger_tune <-
+  tune_grid(wkflow,
+    resamples = train_folds,
+    grid = 11
+  )
+
+show_best(ranger_tune, metric = "rmse") %>%
+  kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+
+autoplot(ranger_tune) +
+  theme_bw()
+```
+
+# Finalise model
+
+```{r}
+final_wkflow <- wkflow %>%
+  finalize_workflow(select_best(ranger_tune, metric = "rmse"))
+
+final_wkflow
+```
+
+# Fit model
+
+```{r}
+ranger_fit <- last_fit(final_wkflow, split)
+```
+
+# Check performance
+
+```{r}
+collect_metrics(ranger_fit) %>%
+  kable( 
+    escape = FALSE,
+    padding = 5
+  ) %>% 
+  kable_styling(
+    bootstrap_options = c("striped", "hover"), 
+    fixed_thead = TRUE, 
+    position = "left"
+  ) %>%
+  row_spec(0, color = "white", background = table_colour)
+```
+
+# Get predictions
+
+```{r}
+ranger_preds <- collect_predictions(ranger_fit)
+
+ranger_preds %>%
+  ggplot(aes(geek_rating, .pred)) +
+  geom_abline(lty = 2, colour = pal_sliced[3]) +
+  geom_point(alpha = 0.5) +
+  coord_fixed() +
+  labs(title = 'Predicted vs actual')
+```
+
+# Apply to new data
+
+```{r}
+have_scored <- cbind(to_score, predict(ranger_fit$.workflow[[1]], to_score)) %>%
+  select(game_id, geek_rating = .pred)
+```
+
+# Output submission
+
+```{r}
+write_csv(have_scored, 'sliced/s01e01/submission.csv')
+```
+
+# Outcome
+
+While this was a late submission, the RMSE for my submission was **0.17972**, which would put me about 10^th^ on the private leaderboard
+
+# Possible improvements
+
+- Try different model types
+- Is there a better way to create flags for the cateogries and mechanics

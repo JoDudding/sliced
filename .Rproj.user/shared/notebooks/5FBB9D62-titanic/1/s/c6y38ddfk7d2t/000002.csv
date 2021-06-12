@@ -1,0 +1,47 @@
+"0","to_build <- read_csv(""titanic/train.csv"", guess_max = 200000) %>%"
+"0","  janitor::clean_names() %>%"
+"0","  mutate("
+"0","    survived = factor(if_else(survived == 1, 'Survived', 'Died'), "
+"0","      levels = c('Survived', 'Died')),"
+"0","    pclass = factor(pclass)  "
+"0","    )"
+"2","
+[36m──[39m [1m[1mColumn specification[1m[22m [36m───────────────────────────────────────────────[39m
+cols(
+  PassengerId = [32mcol_double()[39m,
+  Survived = [32mcol_double()[39m,
+  Pclass = [32mcol_double()[39m,
+  Name = [31mcol_character()[39m,
+  Sex = [31mcol_character()[39m,
+  Age = [32mcol_double()[39m,
+  SibSp = [32mcol_double()[39m,
+  Parch = [32mcol_double()[39m,
+  Ticket = [31mcol_character()[39m,
+  Fare = [32mcol_double()[39m,
+  Cabin = [31mcol_character()[39m,
+  Embarked = [31mcol_character()[39m
+)
+
+"
+"0","to_score <- read_csv(""titanic/test.csv"", guess_max = 200000)  %>%"
+"0","  janitor::clean_names() %>%"
+"0","  mutate("
+"0","    pclass = factor(pclass)  "
+"0","    )"
+"2","
+[36m──[39m [1m[1mColumn specification[1m[22m [36m───────────────────────────────────────────────[39m
+cols(
+  PassengerId = [32mcol_double()[39m,
+  Pclass = [32mcol_double()[39m,
+  Name = [31mcol_character()[39m,
+  Sex = [31mcol_character()[39m,
+  Age = [32mcol_double()[39m,
+  SibSp = [32mcol_double()[39m,
+  Parch = [32mcol_double()[39m,
+  Ticket = [31mcol_character()[39m,
+  Fare = [32mcol_double()[39m,
+  Cabin = [31mcol_character()[39m,
+  Embarked = [31mcol_character()[39m
+)
+
+"

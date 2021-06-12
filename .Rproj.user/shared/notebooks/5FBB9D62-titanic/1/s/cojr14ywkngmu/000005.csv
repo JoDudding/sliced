@@ -1,0 +1,3 @@
+"0","have_scored <- cbind(to_score, predict(xgboost_fit$.workflow[[1]], to_score)) %>%"
+"0","  select(PassengerId = passenger_id, Survived = .pred_class) %>% "
+"0","  mutate(Survived = if_else(Survived == 'Survived', 1, 0))"

@@ -1,0 +1,274 @@
+"0","set.seed(530)"
+"0","train_folds <- vfold_cv(train)"
+"0",""
+"0","#doParallel::registerDoParallel()"
+"0",""
+"0","set.seed(90234)"
+"0","xgboost_tune <-"
+"0","  tune_grid(xgboost_workflow, resamples = train_folds, grid = 19)"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold01: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold02: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold05: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold06: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold07: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold09: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 1/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 2/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 3/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 4/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 5/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 6/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 7/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 8/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 9/19 (predictions): There are new level...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 10/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 11/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 12/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 13/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 14/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 15/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 16/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 17/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 18/19 (predictions): There are new leve...[39m
+"
+"2","[33m![39m [33mFold10: preprocessor 1/1, model 19/19 (predictions): There are new leve...[39m
+"

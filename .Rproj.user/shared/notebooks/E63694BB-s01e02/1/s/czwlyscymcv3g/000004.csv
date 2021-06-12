@@ -1,0 +1,138 @@
+"0","to_build <- read_csv(""s01e02/train.csv"", guess_max = 200000) %>%"
+"0","  glimpse() "
+"2","
+[36m──[39m [1m[1mColumn specification[1m[22m [36m───────────────────────────────────────────────[39m
+cols(
+  .default = col_character(),
+  id = [32mcol_double()[39m,
+  incident_year = [32mcol_double()[39m,
+  incident_month = [32mcol_double()[39m,
+  incident_day = [32mcol_double()[39m,
+  aircraft_model = [32mcol_double()[39m,
+  aircraft_mass = [32mcol_double()[39m,
+  engine_make = [32mcol_double()[39m,
+  engines = [32mcol_double()[39m,
+  engine1_position = [32mcol_double()[39m,
+  engine2_position = [32mcol_double()[39m,
+  engine4_position = [32mcol_double()[39m,
+  height = [32mcol_double()[39m,
+  speed = [32mcol_double()[39m,
+  distance = [32mcol_double()[39m,
+  damaged = [32mcol_double()[39m
+)
+[36mℹ[39m Use [38;5;235m[48;5;253m[38;5;235m[48;5;253m`spec()`[48;5;253m[38;5;235m[49m[39m for the full column specifications.
+
+"
+"1","Rows: 20,766"
+"1",""
+"1","
+"
+"1","Columns: 34"
+"1",""
+"1","
+"
+"1","$ id               [3m[38;5;246m<dbl>[39m[23m 23637, 8075, 5623, 19605, 15142, 27235, 1272…
+$ incident_year    [3m[38;5;246m<dbl>[39m[23m 1996, 1999, 2011, 2007, 2007, 2013, 2002, 20…
+$ incident_month   [3m[38;5;246m<dbl>[39m[23m 11, 6, 12, 9, 9, 5, 5, 5, 7, 8, 10, 9, 11, 7…
+$ incident_day     [3m[38;5;246m<dbl>[39m[23m 7, 26, 1, 13, 13, 28, 4, 19, 22, 22, 21, 7, …
+$ operator_id      [3m[38;5;246m<chr>[39m[23m ""MIL"", ""UAL"", ""SWA"", ""SWA"", ""MIL"", ""UNK"", ""U…
+$ operator         [3m[38;5;246m<chr>[39m[23m ""MILITARY"", ""UNITED AIRLINES"", ""SOUTHWEST AI…
+$ aircraft         [3m[38;5;246m<chr>[39m[23m ""T-1A"", ""B-757-200"", ""B-737-300"", ""B-737-700…
+$ aircraft_type    [3m[38;5;246m<chr>[39m[23m ""A"", ""A"", ""A"", ""A"", ""A"", NA, ""A"", ""A"", NA, ""…
+$ aircraft_make    [3m[38;5;246m<chr>[39m[23m ""748"", ""148"", ""148"", ""148"", NA, NA, ""148"", ""…
+$ aircraft_model   [3m[38;5;246m<dbl>[39m[23m NA, 26, 24, 42, NA, NA, 97, 7, NA, NA, 14, 2…
+$ aircraft_mass    [3m[38;5;246m<dbl>[39m[23m 3, 4, 4, 4, NA, NA, 4, 1, NA, 1, 3, 4, 4, NA…
+$ engine_make      [3m[38;5;246m<dbl>[39m[23m 31, 34, 10, 10, NA, NA, 34, 7, NA, NA, 1, 34…
+$ engine_model     [3m[38;5;246m<chr>[39m[23m ""1"", ""40"", ""1"", ""1"", NA, NA, ""46"", ""10"", NA,…
+$ engines          [3m[38;5;246m<dbl>[39m[23m 2, 2, 2, 2, NA, NA, 2, 1, NA, 2, 2, 2, 2, NA…
+$ engine_type      [3m[38;5;246m<chr>[39m[23m ""D"", ""D"", ""D"", ""D"", NA, NA, ""D"", ""A"", NA, ""C…
+$ engine1_position [3m[38;5;246m<dbl>[39m[23m 5, 1, 1, 1, NA, NA, 1, 7, NA, 3, 5, 5, 5, NA…
+$ engine2_position [3m[38;5;246m<dbl>[39m[23m 5, 1, 1, 1, NA, NA, 1, NA, NA, 3, 5, 5, 5, N…
+$ engine3_position [3m[38;5;246m<chr>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ engine4_position [3m[38;5;246m<dbl>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ airport_id       [3m[38;5;246m<chr>[39m[23m ""KLBB"", ""ZZZZ"", ""KOAK"", ""KSAT"", ""KGFK"", ""KMD…
+$ airport          [3m[38;5;246m<chr>[39m[23m ""LUBBOCK PRESTON SMITH INTL ARPT"", ""UNKNOWN""…
+$ state            [3m[38;5;246m<chr>[39m[23m ""TX"", NA, ""CA"", ""TX"", ""ND"", ""PA"", ""NY"", ""IL""…
+$ faa_region       [3m[38;5;246m<chr>[39m[23m ""ASW"", NA, ""AWP"", ""ASW"", ""AGL"", ""AEA"", ""AEA""…
+$ flight_phase     [3m[38;5;246m<chr>[39m[23m ""LANDING ROLL"", NA, ""LANDING ROLL"", ""APPROAC…
+$ visibility       [3m[38;5;246m<chr>[39m[23m ""DAY"", NA, ""DAY"", ""NIGHT"", ""NIGHT"", NA, NA, …
+$ precipitation    [3m[38;5;246m<chr>[39m[23m NA, NA, ""NONE"", ""NONE"", NA, NA, NA, ""FOG"", N…
+$ height           [3m[38;5;246m<dbl>[39m[23m 0, NA, 0, 300, NA, NA, NA, 2700, NA, 0, 3500…
+$ speed            [3m[38;5;246m<dbl>[39m[23m 80, NA, NA, 130, 140, NA, NA, 110, NA, NA, 1…
+$ distance         [3m[38;5;246m<dbl>[39m[23m 0, NA, 0, NA, NA, 0, NA, NA, 0, 0, NA, NA, 0…
+$ species_id       [3m[38;5;246m<chr>[39m[23m ""UNKBM"", ""UNKBM"", ""ZT002"", ""UNKBS"", ""ZT105"",…
+$ species_name     [3m[38;5;246m<chr>[39m[23m ""UNKNOWN MEDIUM BIRD"", ""UNKNOWN MEDIUM BIRD""…
+$ species_quantity [3m[38;5;246m<chr>[39m[23m ""1"", ""1"", ""1"", ""1"", NA, ""1"", ""1"", ""1"", ""1"", …
+$ flight_impact    [3m[38;5;246m<chr>[39m[23m NA, NA, ""NONE"", ""NONE"", NA, NA, NA, ""NONE"", …
+$ damaged          [3m[38;5;246m<dbl>[39m[23m 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,…"
+"1",""
+"1","
+"
+"0","to_score <- read_csv(""s01e02/test.csv"", guess_max = 200000) %>%"
+"0","  glimpse()"
+"2","
+[36m──[39m [1m[1mColumn specification[1m[22m [36m───────────────────────────────────────────────[39m
+cols(
+  .default = col_character(),
+  id = [32mcol_double()[39m,
+  incident_year = [32mcol_double()[39m,
+  incident_month = [32mcol_double()[39m,
+  incident_day = [32mcol_double()[39m,
+  aircraft_model = [32mcol_double()[39m,
+  aircraft_mass = [32mcol_double()[39m,
+  engine_make = [32mcol_double()[39m,
+  engines = [32mcol_double()[39m,
+  engine1_position = [32mcol_double()[39m,
+  engine2_position = [32mcol_double()[39m,
+  engine4_position = [32mcol_double()[39m,
+  height = [32mcol_double()[39m,
+  speed = [32mcol_double()[39m,
+  distance = [32mcol_double()[39m
+)
+[36mℹ[39m Use [38;5;235m[48;5;253m[38;5;235m[48;5;253m`spec()`[48;5;253m[38;5;235m[49m[39m for the full column specifications.
+
+"
+"1","Rows: 8,954"
+"1",""
+"1","
+"
+"1","Columns: 33"
+"1",""
+"1","
+"
+"1","$ id               [3m[38;5;246m<dbl>[39m[23m 11254, 27716, 29066, 3373, 1996, 18061, 2223…
+$ incident_year    [3m[38;5;246m<dbl>[39m[23m 2015, 1999, 2004, 2000, 2015, 2003, 2013, 20…
+$ incident_month   [3m[38;5;246m<dbl>[39m[23m 9, 6, 10, 8, 9, 7, 8, 8, 8, 7, 10, 8, 5, 10,…
+$ incident_day     [3m[38;5;246m<dbl>[39m[23m 10, 21, 31, 24, 19, 29, 13, 18, 14, 14, 4, 2…
+$ operator_id      [3m[38;5;246m<chr>[39m[23m ""AAL"", ""AAL"", ""UNK"", ""BUS"", ""DAL"", ""UNK"", ""S…
+$ operator         [3m[38;5;246m<chr>[39m[23m ""AMERICAN AIRLINES"", ""AMERICAN AIRLINES"", ""U…
+$ aircraft         [3m[38;5;246m<chr>[39m[23m ""B-737-800"", ""MD-80"", ""UNKNOWN"", ""DA-2000"", …
+$ aircraft_type    [3m[38;5;246m<chr>[39m[23m ""A"", ""A"", NA, ""A"", ""A"", NA, ""A"", ""A"", ""A"", N…
+$ aircraft_make    [3m[38;5;246m<chr>[39m[23m ""148"", ""583"", NA, ""300"", ""04A"", NA, ""148"", ""…
+$ aircraft_model   [3m[38;5;246m<dbl>[39m[23m 43, 37, NA, 12, 3, NA, 24, 23, 23, NA, NA, 1…
+$ aircraft_mass    [3m[38;5;246m<dbl>[39m[23m 4, 4, NA, 3, 4, NA, 4, 1, 1, NA, NA, 2, 3, 2…
+$ engine_make      [3m[38;5;246m<dbl>[39m[23m 10, 34, NA, 11, 10, NA, 10, 7, 7, NA, NA, 19…
+$ engine_model     [3m[38;5;246m<chr>[39m[23m ""1"", ""10"", NA, ""1"", ""1"", NA, ""1"", ""19"", ""19""…
+$ engines          [3m[38;5;246m<dbl>[39m[23m 2, 2, NA, 2, 2, NA, 2, 1, 1, NA, NA, 2, 2, 1…
+$ engine_type      [3m[38;5;246m<chr>[39m[23m ""D"", ""D"", NA, ""D"", ""D"", NA, ""D"", ""A"", ""A"", N…
+$ engine1_position [3m[38;5;246m<dbl>[39m[23m 1, 5, NA, 5, 1, NA, 1, 7, 7, NA, NA, 4, 4, 7…
+$ engine2_position [3m[38;5;246m<dbl>[39m[23m 1, 5, NA, 5, 1, NA, 1, NA, NA, NA, NA, 4, 4,…
+$ engine3_position [3m[38;5;246m<chr>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ engine4_position [3m[38;5;246m<dbl>[39m[23m NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, …
+$ airport_id       [3m[38;5;246m<chr>[39m[23m ""KMIA"", ""KSAT"", ""PHOG"", ""MMTO"", ""KDTW"", ""KMD…
+$ airport          [3m[38;5;246m<chr>[39m[23m ""MIAMI INTL"", ""SAN ANTONIO INTL"", ""KAHULUI A…
+$ state            [3m[38;5;246m<chr>[39m[23m ""FL"", ""TX"", ""HI"", NA, ""MI"", ""IL"", ""TX"", ""AZ""…
+$ faa_region       [3m[38;5;246m<chr>[39m[23m ""ASO"", ""ASW"", ""AWP"", ""FGN"", ""AGL"", ""AGL"", ""A…
+$ flight_phase     [3m[38;5;246m<chr>[39m[23m ""APPROACH"", ""LANDING ROLL"", NA, ""TAKEOFF RUN…
+$ visibility       [3m[38;5;246m<chr>[39m[23m ""DAY"", ""DUSK"", NA, ""DAY"", ""DAY"", NA, ""DAY"", …
+$ precipitation    [3m[38;5;246m<chr>[39m[23m ""NONE"", ""NONE"", NA, ""NONE"", ""RAIN"", NA, ""NON…
+$ height           [3m[38;5;246m<dbl>[39m[23m 2600, 0, NA, 0, NA, NA, 500, 5, 650, 0, NA, …
+$ speed            [3m[38;5;246m<dbl>[39m[23m 175, 90, NA, 200, NA, NA, 130, 60, 80, NA, N…
+$ distance         [3m[38;5;246m<dbl>[39m[23m 10, 0, 0, 0, NA, 0, NA, NA, NA, 0, 0, NA, NA…
+$ species_id       [3m[38;5;246m<chr>[39m[23m ""K33"", ""UNKBS"", ""N5122"", ""UNKBM"", ""NE1"", ""K5…
+$ species_name     [3m[38;5;246m<chr>[39m[23m ""HAWK"", ""UNKNOWN SMALL BIRD"", ""PACIFIC GOLDE…
+$ species_quantity [3m[38;5;246m<chr>[39m[23m ""1"", ""1"", ""1"", ""1"", ""1"", ""1"", ""1"", ""1"", ""1"",…
+$ flight_impact    [3m[38;5;246m<chr>[39m[23m ""NONE"", ""NONE"", NA, ""NONE"", ""NONE"", NA, ""NON…"
+"1",""
+"1","
+"
