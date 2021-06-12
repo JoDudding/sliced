@@ -9,8 +9,8 @@ output:
     toc_float: 
       collapsed: true
     includes:
-      in_header: "../sliced/header.html"
-      after_body: "../sliced/footer.html"
+      in_header: "header.html"
+      after_body: "footer.html"
 
 ---
 
@@ -19,12 +19,8 @@ output:
 #' set knitr options
 #-------------------------------------------------------------------------------
 
-knitr::opts_knit$set(
-  root.dir = ".."
-)
-
 knitr::opts_chunk$set(
-  fig.width = 19 / 2.54,
+  fig.width = 24 / 2.54,
   fig.height = 13.4 / 2.54,
   fig.retina = 4,
   comment = '',
@@ -75,6 +71,8 @@ Predict whether an aircraft strike with wildlife causes damage
 
 [Twitch link](https://www.twitch.tv/nickwan_datasci)
 
+This time I'm trying an XGBoost model.
+
 # Load libraries
 
 ```{r, message = FALSE, warning = FALSE}
@@ -84,6 +82,15 @@ library(scales)
 library(skimr)
 library(kableExtra)
 library(patchwork)
+library(gt)
+library(lubridate)
+library(glue)
+library(themis)
+```
+
+# My settings
+
+```{r}
 
 # colours
 #pal_jo <- c(viridisLite::magma(8)[2:8], "#4C4C53", "#9B9BA8")
@@ -196,10 +203,8 @@ update_geom_defaults("line", list(colour = bar_colour))
 # Read files
 
 ```{r}
-to_build <- read_csv("s01e02/train.csv", guess_max = 200000) %>%
-  glimpse() 
-to_score <- read_csv("s01e02/test.csv", guess_max = 200000) %>%
-  glimpse()
+to_build <- read_csv("s01e02/train.csv", guess_max = 200000) 
+to_score <- read_csv("s01e02/test.csv", guess_max = 200000) 
 ```
 
 # Examine data
@@ -208,13 +213,43 @@ to_score <- read_csv("s01e02/test.csv", guess_max = 200000) %>%
 skim(to_build)
 ```
 
+<br>
+Initial thoughts
+
+- Lots of missing values!
+- Some of the character variables have lots of categories
+- Missing value for the target variable
+
 ```{r}
 explore_build <- to_build %>% 
   filter(! is.na(damaged)) %>% 
-  mutate(damaged = factor(damaged))
+  mutate(
+    damaged_factor = factor(if_else(damaged == 1, 'Damaged', 'Not Damaged')),
+    date = ymd(paste(incident_year, incident_month, incident_day, 
+      sep = '-')),
+    dow = wday(date, label = TRUE, abbr = TRUE),
+    log_height= log(height),
+    log_speed= log(speed),
+    log_distance = log(distance),
+    aircraft_mass = factor(aircraft_mass)
+  )
 
 ```
 
+## Look at sample
+
+```{r}
+set.seed(617)
+
+explore_build %>% 
+  select(damaged, damaged_factor, everything()) %>% 
+  slice_sample(n = 5) %>% 
+  gather(-id, key = 'key', value = 'value') %>% 
+  spread(key = id, value = value) %>% 
+  arrange(-str_detect(key, 'damag')) %>% 
+  gt()
+
+```
 
 ## Target - damaged
 
@@ -224,75 +259,445 @@ explore_build <- to_build %>%
 ```{r}
 summary(explore_build$damaged)
 
-ggplot(explore_build, aes(damaged)) +
+ggplot(explore_build, aes(damaged_factor, fill = damaged_factor)) +
   geom_bar() +
   scale_y_comma() +
-  labs(title = 'Damaged', x = NULL, y = NULL, fill = 'Damaged')
+  labs(title = 'Damaged', x = NULL, y = NULL, fill = 'Damaged') +
+  guides(fill = 'none')
 ```
 
 
-## Function for exploration
+## Function for exploration - numeric
 
 
 ```{r}
 
-explore_num <- function(x, bins = 30){
-
-#summary(to_build[x])
-#  summary(to_build[[incident_year]])       
+explore_num <- function(x, ...){
 
 a <- explore_build %>% 
   mutate(is_it_na = if_else(is.na({{x}}), 'NA', 'Present')) %>% 
-ggplot(aes(is_it_na, fill = damaged)) +
+ggplot(aes(is_it_na, fill = damaged_factor)) +
   geom_bar() +
   scale_y_comma() +
-  labs(x = NULL, y = NULL, fill = 'Damaged')
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  guides(fill = 'none')
 
 b <- explore_build %>% 
   mutate(is_it_na = if_else(is.na({{x}}), 'NA', 'Present')) %>% 
-ggplot(aes(is_it_na, fill = damaged)) +
+ggplot(aes(is_it_na, fill = damaged_factor)) +
   geom_bar(position = 'fill') +
   scale_y_pct() +
-  labs(x = NULL, y = NULL, fill = 'Damaged')
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  guides(fill = 'none')
 
-c <- ggplot(explore_build, aes({{x}}, fill = damaged)) +
-  geom_histogram(bins = bins) +
+c <- ggplot(explore_build, aes({{x}}, fill = damaged_factor)) +
+  geom_histogram( ...) +
   scale_y_comma() +
-  labs(x = NULL, y = NULL, fill = 'Damaged')
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  guides(fill = 'none')
 
-d <- ggplot(explore_build, aes({{x}}, fill = damaged)) +
-  geom_histogram(bins = bins, position = 'fill') +
+d <- ggplot(explore_build, aes({{x}}, fill = damaged_factor)) +
+  geom_histogram(position = 'fill', ...) +
   scale_y_pct() +
-  labs(x = NULL, y = NULL, fill = 'Damaged')
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  guides(fill = 'none')
 
-(a + b) / (c + d)
+(a + b) / (c + d) 
 
+}
+
+```
+
+## Function for exploration - category
+
+
+```{r}
+
+explore_char <- function(x, ...){
+
+c <- explore_build %>% 
+  mutate(
+    tmp = fct_infreq(fct_lump_n({{x}}, 20))
+  ) %>% 
+ggplot(aes(tmp, fill = damaged_factor)) +
+  geom_bar() +
+  scale_y_comma() +
+  scale_x_discrete(label = label_wrap(15)) +
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  coord_flip() +
+  guides(fill = 'none')
+
+d <- explore_build %>% 
+  mutate(
+    tmp = fct_infreq(fct_lump_n({{x}}, 20))
+  ) %>% 
+ggplot(aes(tmp, fill = damaged_factor)) +
+  geom_bar(position = 'fill') +
+  scale_y_pct() +
+  scale_x_discrete(label = label_wrap(15)) +
+  labs(x = NULL, y = NULL, fill = 'Damaged') +
+  coord_flip() +
+  guides(fill = 'none')
+
+(c + d) 
 }
 
 ```
 
 ## incident_year
 
+Year the incident occurred (1990-2015)
+
+- No missing data
+- Rate decreasing over time
+
 
 ```{r}
-#skim(explore_build)
-explore_num(incident_year)
-
+explore_num(incident_year, binwidth = 1)
 ```  
+
+## incident_month
+
+Month the incident occurred (1-12)
+
+- Change to factor
+- seasonal impact
+
+
+```{r}
+explore_num(incident_month, binwidth = 1)
+``` 
+
+## incident_day
+
+Day the incident occurred (1-31)
+
+- Omit raw
+- Could combine with month and year to get date and use `step_date`?
+- Public holidays could be an issue `step_holiday`
+- Day of week might be more useful - Not useful
+
+
+```{r}
+explore_char(dow)
+``` 
+
+## operator_id / operator
+
+International Civil Aviation Organization (ICAO) code for aircraft operators / Name of the Airline
+
+- Omit operator_id
+- some operators have higher rates
+
+```{r}
+explore_char(operator)
+``` 
+
+## aircraft
+
+Model of aircraft involved in the strike
+
+For example: B-777 means a Boeing 777 was struck in the incident
+
+```{r}
+explore_char(aircraft)
+``` 
+
+## aircraft_type
+
+- 'A': "multi-engined aeroplanes powered by turbo-propeller engines with an MOPSC of more than nine or a maximum take-off mass exceeding 5 700 kg, and all multi-engined turbo-jet powered aeroplanes"
+- 'B': "aeroplanes powered by propeller engines with an MOPSC of nine or less and a maximum take-off mass of 5 700 kg or less"
+
+```{r}
+explore_char(aircraft_type)
+``` 
+
+## aircraft_make
+
+International Civil Aviation Organization (ICAO) code for Aircraft Make
+
+```{r}
+explore_char(aircraft_make)
+``` 
+
+## aircraft_model
+
+International Civil Aviation Organization (ICAO) code for Aircraft Model
+
+- should be factor
+
+```{r}
+explore_num(aircraft_model, binwidth = 10)
+``` 
+
+## aircraft_mass
+
+- 1 = 2,250 kg or less
+- 2 = 2,251-5,700 kg
+- 3 = 5,701-27,000 kg
+- 4 = 27,001-272,000 kg
+- 5 = above 272,000 kg
+
+- convert to factor
+
+```{r}
+explore_char(aircraft_mass)
+``` 
+
+## engine_make
+
+Engine Make Code
+
+- should be a factor
+
+```{r}
+explore_num(engine_make, binwidth = 1)
+``` 
+
+## engine_model
+
+Engine Model Code
+
+```{r}
+explore_char(engine_model)
+``` 
+
+## engines
+
+Number of engines powering the aircraft
+
+```{r}
+explore_num(engines, binwidth = 1)
+``` 
+
+## engine_type
+
+The way the engine is powered
+
+- 'A' - Reciprocating
+- 'B' - Turbojet
+- 'C' - Turboprop
+- 'D' - Turbofan
+- 'E' - None (glider)
+- 'F' - Turboshaft (helicopter)
+- Special Note: Some aircrafts can have two engine types
+  - Example: 'B/D'
+
+```{r}
+explore_char(engine_type)
+``` 
+
+## engine1_position
+
+Where engine 1 is mounted on aircraft
+
+- should be  factor
+
+```{r}
+explore_num(engine1_position)
+``` 
+
+## engine2_position
+
+Where engine 2 is mounted on aircraft
+
+- should be a factor
+
+```{r}
+explore_num(engine2_position)
+``` 
+
+## engine3_position
+
+Where engine 3 is mounted on aircraft
+
+- omit
+
+## engine4_position
+
+Where engine 4 is mounted on aircraft
+
+- omit
+
+## airport_id / airport
+
+Location of the strike given as the International Civil Aviation Organization (ICAO) airport identifier / Name of the airport where the strike occurred
+
+```{r}
+explore_char(airport)
+``` 
+
+## state
+
+Abbreviated state from US, Canada
+
+```{r}
+explore_char(state)
+``` 
+
+## faa_region
+FAA region where the airport is located
+
+- The US has 9 regions (AAL, ACE, AEA, AGL, ANE, ANM, ASO, ASW, AWP)
+- Canada has 5 regions (ATL, AWP, ONT, P&N, PAC, QUE)
+- All other regions of the world are considered foreign regions (FGN)
+
+```{r}
+explore_char(faa_region)
+``` 
+
+## flight_phase
+
+Phase of flight during which the strike occured
+
+- APPROACH
+- ARRIVAL
+- CLIMB
+- DEPARTURE
+- DESCENT
+- EN ROUTE
+- LANDING
+- LANDING ROLL
+- LOCAL
+- PARKED
+- TAKEOFF RUN
+- TAXI
+
+```{r}
+explore_char(flight_phase)
+```
+
+
+## visibility
+
+Time of day when the strike occurred
+
+- DAWN
+- DAY
+- DUSK
+- NIGHT
+- UNKNOWN
+
+```{r}
+explore_char(visibility)
+```
+
+## precipitation
+
+- FOG
+ -RAIN
+- SNOW
+- NONE
+- Special Note: Can have multiple values
+  - Example: FOG, RAIN
+  
+- Is it worth splitting?  
+
+```{r}
+explore_char(precipitation)
+```
+
+## height
+
+Feet About Ground Level where the strike occurred (0-24,000)
+
+```{r}
+explore_num(height, bins = 50)
+``` 
+
+Try log
+
+```{r}
+explore_num(log_height, bins = 50)
+``` 
+
+## speed
+
+Velocity in Knots (0-2500)
+
+- trim high values
+
+```{r}
+explore_num(speed, bins = 50)
+``` 
+
+Try log
+
+```{r}
+explore_num(log_speed, bins = 50)
+``` 
 
 ## distance
 
+How many miles from the airport (0-100)
 
 ```{r}
-#skim(explore_build)
-explore_num(distance)
-
+explore_num(distance, binwidth = 5)
 ``` 
 
-## Time
+Try log
 
 ```{r}
-explore_num(log(distance))
+explore_num(log_distance, bins = 50)
+``` 
+
+## species_id / species_name
+
+International Civil Aviation Organization (ICAO) code for type of wildlife / Common name for type of wildlife struck
+
+- just use name
+
+```{r}
+explore_char(species_name)
+```
+
+## species_quantity
+
+Amount of wildlife struck
+
+- 1
+- 2-10
+- 11-100
+- Over 100
+
+
+```{r}
+explore_char(species_quantity)
+```
+
+## flight_impact
+
+How the strike impacted the flight
+
+- ABORTED
+- TAKEOFF
+- ENGINE SHUTDOWN
+- NONE
+- OTHER
+- PRECAUTIONARY LANDING
+
+```{r}
+explore_char(flight_impact)
+```
+
+# Split in to train and test
+
+```{r}
+set.seed(728)
+
+to_build <- to_build %>% 
+  mutate(damaged = factor(damaged, levels = c(1, 0)))
+
+split <- initial_split(to_build, strata = damaged)
+train <- training(split)
+test <- testing(split)
+```
+
+# Create folds
+
+```{r}
+set.seed(530)
+train_folds <- vfold_cv(train, 5)
 ```
 
 
@@ -300,142 +705,49 @@ explore_num(log(distance))
 
 ```{r}
 rec <- recipe(damaged ~ ., data = train) %>%
-  # id role for game_id
-  update_role(game_id, new_role = "ID") %>%
-  # flags for categories
+  #recipe(damaged ~ speed + height + distance + incident_year + incident_month,
+  #  data = train) %>% 
+  # id role
+  update_role(id, new_role = "ID") %>%
+  # damaged not missing
+  step_filter(! is.na(damaged)) %>% 
+  # create variables
   step_mutate(
-    
-    cat_card_game = if_any(starts_with("cate"), ~ .x == "Card Game"),
-    cat_card_game =as.numeric( replace_na(cat_card_game, FALSE)),
-    
-    cat_wargame = if_any(starts_with("cate"), ~ .x == "Wargame"),
-    cat_wargame = as.numeric(replace_na(cat_wargame, FALSE)),
-    
-    cat_fantasy = if_any(starts_with("cate"), ~ .x == "Fantasy"),
-    cat_fantasy = as.numeric(replace_na(cat_fantasy, FALSE)),
-    
-    cat_economic = if_any(starts_with("cate"), ~ .x == "Economic"),
-    cat_economic = as.numeric(replace_na(cat_economic, FALSE)),
-    
-    cat_fighting = if_any(starts_with("cate"), ~ .x == "Fighting"),
-    cat_fighting = as.numeric(replace_na(cat_fighting, FALSE)),
-    
-    cat_science_fiction = if_any(starts_with("cate"), ~ .x == 
-      "Science Fiction"),
-    cat_science_fiction = as.numeric(replace_na(cat_science_fiction, FALSE)),
-    
-    cat_dice = if_any(starts_with("cate"), ~ .x == "Dice"),
-    cat_dice = as.numeric(replace_na(cat_dice, FALSE)),
-    
-    cat_bluffing = if_any(starts_with("cate"), ~ .x == "Bluffing"),
-    cat_bluffing = as.numeric(replace_na(cat_bluffing, FALSE)),
-    
-    cat_adventure = if_any(starts_with("cate"), ~ .x == "Adventure"),
-    cat_adventure = as.numeric(replace_na(cat_adventure, FALSE)),
-    
-    cat_miniatures = if_any(starts_with("cate"), ~ .x == "Miniatures"),
-    cat_miniatures = as.numeric(replace_na(cat_miniatures, FALSE)),
-    
-    cat_ww2 = if_any(starts_with("cate"), ~ .x == "World War II"),
-    cat_ww2 = as.numeric(replace_na(cat_ww2, FALSE)),
-    
-    cat_medieval = if_any(starts_with("cate"), ~ .x == "Medieval"),
-    cat_medieval = as.numeric(replace_na(cat_medieval, FALSE)),
-    
-    cat_explor = if_any(starts_with("cate"), ~ .x == "Exploration"),
-    cat_explor = as.numeric(replace_na(cat_explor, FALSE)),
-    
-    cat_deduct = if_any(starts_with("cate"), ~ .x == "Deduction"),
-    cat_deduct = as.numeric(replace_na(cat_deduct, FALSE)),
-    
-    cat_party = if_any(starts_with("cate"), ~ .x == "Party Game"),
-    cat_party = as.numeric(replace_na(cat_party, FALSE)),
-    
-    cat_abstract = if_any(starts_with("cate"), ~ .x == "Abstract Strategy"),
-    cat_abstract = as.numeric(replace_na(cat_abstract, FALSE)),
-    
-    cat_animals = if_any(starts_with("cate"), ~ .x == "Animals"),
-    cat_animals = as.numeric(replace_na(cat_animals, FALSE))
-  ) %>%
-  # flags for mechanic
+    speed = if_else(speed > 500, 500, speed)
+  ) %>% 
+  # numbers to characters
   step_mutate(
-    mech_dice = as.numeric(str_detect(mechanic, "Dice Rolling")),
-    mech_hand = as.numeric(str_detect(mechanic, "Hand Management" )),
-    mech_powers = as.numeric(str_detect(mechanic, "Variable Player Powers")),
-    mech_sets = as.numeric(str_detect(mechanic, "Set Collection")),
-    mech_infl = as.numeric(str_detect(mechanic, 
-      "Area Control / Area Influence")),
-    mech_draft = as.numeric(str_detect(mechanic, "Card Drafting")),
-    mech_modular = as.numeric(str_detect(mechanic, "Modular Board")),
-    mech_tile = as.numeric(str_detect(mechanic, "Tile Placement")),
-    mech_hex = as.numeric(str_detect(mechanic, "Hex-and-Counter")),
-    mech_action = as.numeric(str_detect(mechanic, 
-      "Action Point Allowance System")),
-    mech_coop = as.numeric(str_detect(mechanic, "Co-operative Play")),
-    mech_sas = as.numeric(str_detect(mechanic, 
-      "Simultaneous Action Selection")),
-    mech_auction = as.numeric(str_detect(mechanic, "Auction/Bidding")),
-    mech_area = as.numeric(str_detect(mechanic, "Area Movement")),
-    mech_worker = as.numeric(str_detect(mechanic, "Worker Placement")),
-    mech_grid = as.numeric(str_detect(mechanic, "Grid Movement")),
-    mech_simul = as.numeric(str_detect(mechanic, "Simulation")),
-    mech_deck = as.numeric(str_detect(mechanic, "Deck / Pool Building")),
-    mech_partner = as.numeric(str_detect(mechanic, "Partnerships")),
-    mech_point = as.numeric(str_detect(mechanic, "Point to Point Movement")),
-    mech_route = as.numeric(str_detect(mechanic, "Route/Network Building"))  
-  ) %>%
-  # flags for mechanic
-  step_mutate(
-    design_1 = as.numeric(str_detect(designer, "Reiner Knizia")),
-    design_2 = as.numeric(str_detect(designer, "Martin Wallace")),
-    design_3 = as.numeric(str_detect(designer, "Wolfgang Kramer")),
-    design_4 = as.numeric(str_detect(designer, "Dean Essig")),
-    design_5 = as.numeric(str_detect(designer, "Alan R. Moon")),
-    design_6 = as.numeric(str_detect(designer, "Bruno Cathala")),
-    design_7 = as.numeric(str_detect(designer, "Friedemann Friese")),
-    design_8 = as.numeric(str_detect(designer, "Mike Elliott")),
-    design_9 = as.numeric(str_detect(designer, "Klaus Teuber")),
-    design_10 = as.numeric(str_detect(designer, "Richard H. Berg"))
-  ) %>%
-  # remove the name, designer, mechanic and category variables
-  step_rm(names, mechanic, designer, category1:category12) %>%
-  # log transformation
-  step_log(num_votes, owned) %>%
-  # outliers
-  step_mutate(
-    min_players = case_when(
-      min_players == 0 ~ as.numeric(NA), 
-      min_players > 20 ~ 20,
-      TRUE ~ min_players
-    ),
-    max_players = case_when(
-      max_players == 0 ~ as.numeric(NA), 
-      max_players > 20 ~ 20,
-      TRUE ~ max_players
-    ),
-    min_time = case_when(
-      min_time == 0 ~ as.numeric(NA),
-      min_time > 240 ~ 240,
-      TRUE ~ min_time
-    ),
-    max_time = case_when(
-      max_time == 0 ~ as.numeric(NA),
-      max_time > 240 ~ 240,
-      TRUE ~ max_time
-    ),
-    avg_time = case_when(
-      avg_time == 0 ~ as.numeric(NA),
-      avg_time > 240 ~ 240,
-      TRUE ~ avg_time
-    ),
-    year = case_when(
-        year == 0 ~ as.numeric(NA), 
-        year < 1900 ~ 1900,
-        TRUE ~ year
-    )
-  ) %>%
-  # imputation
-  step_impute_mean(min_players, max_players, year, min_time, max_time, avg_time)
+    incident_month = as.character(incident_month), 
+    aircraft_mass = as.character(aircraft_mass), 
+    aircraft_model = as.character(aircraft_model), 
+    engine_make = as.character(engine_make), 
+    engine1_position = as.character(engine1_position), 
+    engine2_position = as.character(engine2_position),
+    engines = as.character(engines)
+  ) %>% 
+  # remove variables
+  step_rm(operator_id, incident_day, species_id, airport_id, 
+    engine3_position, engine4_position) %>%
+  # flag for missing values
+  step_indicate_na(height, speed, distance) %>% 
+  # imputation of missing values
+  step_impute_mean(height, speed, distance) %>% 
+  # character to factors
+  step_string2factor(all_nominal()) %>% 
+  # explicit na
+  step_unknown(all_nominal_predictors()) %>% 
+  # handle new classes
+  step_novel(all_nominal(), -all_outcomes()) %>% 
+  # lump together small values
+  step_other(all_nominal_predictors()) %>% 
+  # all numeric
+  step_dummy(all_nominal_predictors()) %>% 
+  # missing values for factors
+  step_impute_lower(all_numeric_predictors()) %>% 
+  # remove if zero variance
+  step_zv(all_predictors()) %>% 
+  # rebalance
+  step_downsample(damaged)
 ```
 
 # Check recipe outputs
@@ -444,62 +756,73 @@ rec <- recipe(damaged ~ ., data = train) %>%
 prepped <- prep(rec)
 baked <- bake(prepped, new_data = NULL) 
 
-skim(baked)  
+skim(baked)
 ```
+<br>
+
 
 # Specify model
 
 ```{r}
-spec <- rand_forest(mtry = tune(), min_n = tune(), trees = 1500) %>%
-  set_mode("regression") %>%
-  set_engine("ranger")
+xgboost_spec <- boost_tree(
+    trees = 2000, 
+    min_n = 23, 
+    tree_depth = 15, 
+    learn_rate = 0.00591673615298013, 
+    loss_reduction = 3.41525742335076e-07, 
+    sample_size = 0.648717504832894
+  ) %>% 
+  set_mode("classification") %>% 
+  set_engine("xgboost")
 ```
 
 # Specify workflow
 
 ```{r}
-wkflow <- workflow() %>%
-  add_recipe(rec) %>%
-  add_model(spec)
+xgboost_workflow <- workflow() %>% 
+  add_recipe(rec) %>% 
+  add_model(xgboost_spec) 
 
-wkflow  
+xgboost_workflow
 ```
-
 # Tune
 
-```{r}
-set.seed(530)
-train_folds <- vfold_cv(train)
+Tuning happened but won't be included because it took so long.  
 
-set.seed(3621)
-doParallel::registerDoParallel()
-ranger_tune <-
-  tune_grid(wkflow,
-    resamples = train_folds,
-    grid = 11
-  )
+```{r, eval = FALSE}
+set.seed(34379)
+xgboost_tune <- tune_grid(
+  xgboost_workflow, 
+  resamples = train_folds, 
+  grid = 9
+ )
+```
 
-show_best(ranger_tune, metric = "rmse") %>%
-  kable( 
-    escape = FALSE,
-    padding = 5
-  ) %>% 
-  kable_styling(
-    bootstrap_options = c("striped", "hover"), 
-    fixed_thead = TRUE, 
-    position = "left"
-  ) %>%
-  row_spec(0, color = "white", background = table_colour)
+## Tuning outcome
 
-autoplot(ranger_tune) +
+The results were:
+
+- trees = 2000
+- min_n = 23
+- tree_depth = 15
+- learn_rate = 0.00591673615298013
+- loss_reduction = 3.41525742335076e-07
+- sample_size = 0.648717504832894
+
+
+```{r, eval = FALSE}
+show_best(xgboost_tune, metric = "roc_auc") %>%
+  gt()
+
+autoplot(xgboost_tune) +
   theme_bw()
 ```
 
 # Finalise model
 
 ```{r}
-final_wkflow <- wkflow %>%
-  finalize_workflow(select_best(ranger_tune, metric = "rmse"))
+final_wkflow <- xgboost_workflow #%>%
+  #finalize_workflow(select_best(xgboost_tune, metric = "roc_auc"))
 
 final_wkflow
 ```
@@ -507,56 +830,47 @@ final_wkflow
 # Fit model
 
 ```{r}
-ranger_fit <- last_fit(final_wkflow, split)
+xgboost_fit <- last_fit(final_wkflow, split)
 ```
 
 # Check performance
 
 ```{r}
-collect_metrics(ranger_fit) %>%
-  kable( 
-    escape = FALSE,
-    padding = 5
-  ) %>% 
-  kable_styling(
-    bootstrap_options = c("striped", "hover"), 
-    fixed_thead = TRUE, 
-    position = "left"
-  ) %>%
-  row_spec(0, color = "white", background = table_colour)
+collect_metrics(xgboost_fit) %>%
+  gt()
 ```
 
 # Get predictions
 
 ```{r}
-ranger_preds <- collect_predictions(ranger_fit)
+xgboost_preds <- collect_predictions(xgboost_fit)
+```
 
-ranger_preds %>%
-  ggplot(aes(geek_rating, .pred)) +
-  geom_abline(lty = 2, colour = pal_sliced[3]) +
-  geom_point(alpha = 0.5) +
-  coord_fixed() +
-  labs(title = 'Predicted vs actual')
+# ROC Curve
+
+```{r}
+xgboost_preds %>%
+  roc_curve(damaged, .pred_1) %>% 
+  autoplot()
 ```
 
 # Apply to new data
 
 ```{r}
-have_scored <- cbind(to_score, predict(ranger_fit$.workflow[[1]], to_score)) %>%
-  select(game_id, geek_rating = .pred)
+have_scored <- cbind(to_score, predict(xgboost_fit$.workflow[[1]], to_score)) %>%
+  select(id, damaged = .pred)
 ```
 
 # Output submission
 
 ```{r}
-write_csv(have_scored, 'sliced/s01e01/submission.csv')
+write_csv(have_scored, 'sliced/s01e02/submission.csv')
 ```
 
 # Outcome
 
-While this was a late submission, the RMSE for my submission was **0.17972**, which would put me about 10^th^ on the private leaderboard
+
 
 # Possible improvements
 
-- Try different model types
-- Is there a better way to create flags for the cateogries and mechanics
+- 

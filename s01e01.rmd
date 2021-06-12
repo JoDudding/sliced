@@ -2,6 +2,12 @@
 title: SLICED s01e01
 author: Jo Dudding
 output: 
+  github_document:
+    toc: true
+    html_preview: false
+    includes:
+      in_header: "header.md"
+      after_body: "footer.md"
   html_document:
     theme: united
     highlight: kate
@@ -9,8 +15,8 @@ output:
     toc_float: 
       collapsed: true
     includes:
-      in_header: "../sliced/header.html"
-      after_body: "../sliced/footer.html"
+      in_header: "header.html"
+      after_body: "footer.html"
 
 ---
 
@@ -18,10 +24,6 @@ output:
 #-------------------------------------------------------------------------------
 #' set knitr options
 #-------------------------------------------------------------------------------
-
-knitr::opts_knit$set(
-  root.dir = ".."
-)
 
 knitr::opts_chunk$set(
   fig.width = 19 / 2.54,
@@ -195,8 +197,8 @@ update_geom_defaults("line", list(colour = bar_colour))
 # Read files
 
 ```{r}
-to_build <- read_csv("sliced/s01e01/train.csv", guess_max = 200000) 
-to_score <- read_csv("sliced/s01e01/test.csv", guess_max = 200000) %>%
+to_build <- read_csv("s01e01/train.csv", guess_max = 200000) 
+to_score <- read_csv("s01e01/test.csv", guess_max = 200000) %>%
   mutate(
     category11 = as.character(category11),
     category12 = as.character(category12)
@@ -678,7 +680,6 @@ set.seed(530)
 train_folds <- vfold_cv(train)
 
 set.seed(3621)
-doParallel::registerDoParallel()
 ranger_tune <-
   tune_grid(wkflow,
     resamples = train_folds,
@@ -755,7 +756,7 @@ have_scored <- cbind(to_score, predict(ranger_fit$.workflow[[1]], to_score)) %>%
 # Output submission
 
 ```{r}
-write_csv(have_scored, 'sliced/s01e01/submission.csv')
+write_csv(have_scored, 's01e01/submission.csv')
 ```
 
 # Outcome
@@ -765,4 +766,4 @@ While this was a late submission, the RMSE for my submission was **0.17972**, wh
 # Possible improvements
 
 - Try different model types
-- Is there a better way to create flags for the cateogries and mechanics
+- Is there a better way to create flags for the categories and mechanics - yes using the textrecipes package
