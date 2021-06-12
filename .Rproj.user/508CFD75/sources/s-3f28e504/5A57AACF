@@ -3,7 +3,7 @@
     "path": "/cloud/project/README.md",
     "project_path": "README.md",
     "type": "markdown",
-    "hash": "1025454794",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1623471711288.0,
@@ -17,11 +17,11 @@
         "scrollLine": "0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1623472346,
+    "lastKnownWriteTime": 1623472574,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1623472346636,
+    "last_content_update": 1623472574451,
     "read_only": false,
     "read_only_alternatives": []
 }
