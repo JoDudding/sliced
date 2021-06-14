@@ -2,6 +2,10 @@
 
 Exploring the data used for Sliced.
 
+
+> HTML output needs to be moved to Netlify to be viewable.  Markdown isn't handling the `gt` tables.
+
+
 # Season 1 - June 2021
 
 # s01e01 Predict the popularity of board games on BoardGameGeek.com

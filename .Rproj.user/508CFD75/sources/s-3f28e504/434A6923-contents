@@ -725,12 +725,13 @@ rec <- recipe(damaged ~ ., data = train) %>%
     engines = as.character(engines)
   ) %>% 
   # remove variables
-  step_rm(operator_id, incident_day, species_id, airport_id, 
-    engine3_position, engine4_position) %>%
+  step_rm(operator_id, operator, incident_day, species_id, airport_id, 
+    engine3_position, engine4_position, aircraft, state, aircraft_model,
+    engine_make, engine_model, aircraft_make, airport, distance) %>%
   # flag for missing values
-  step_indicate_na(height, speed, distance) %>% 
+  step_indicate_na(height, speed) %>% 
   # imputation of missing values
-  step_impute_mean(height, speed, distance) %>% 
+  step_impute_mean(height, speed) %>% 
   # character to factors
   step_string2factor(all_nominal_predictors()) %>% 
   # explicit na
@@ -755,8 +756,6 @@ baked <- bake(prepped, new_data = NULL)
 
 skim(baked)
 ```
-<br>
-
 
 # Specify model
 
@@ -783,16 +782,20 @@ xgboost_workflow <- workflow() %>%
 
 xgboost_workflow
 ```
+
 # Tune
 
 Tuning happened but won't be included because it took so long.  
 
 ```{r, eval = FALSE}
+xgboost_metric <- metric_set(mn_log_loss)
+
 set.seed(34379)
 xgboost_tune <- tune_grid(
   xgboost_workflow, 
   resamples = train_folds, 
-  grid = 9
+  grid = 9,
+  metrics = xgboost_metric
  )
 ```
 
@@ -809,7 +812,7 @@ The results were:
 
 
 ```{r, eval = FALSE}
-show_best(xgboost_tune, metric = "roc_auc") %>%
+show_best(xgboost_tune, metric = "mn_log_loss") %>%
   gt()
 
 autoplot(xgboost_tune) +
@@ -820,7 +823,7 @@ autoplot(xgboost_tune) +
 
 ```{r}
 final_wkflow <- xgboost_workflow #%>%
-  #finalize_workflow(select_best(xgboost_tune, metric = "roc_auc"))
+  #finalize_workflow(select_best(xgboost_tune, metric = "mn_log_loss"))
 
 final_wkflow
 ```
@@ -829,13 +832,13 @@ final_wkflow
 # Fit model
 
 ```{r}
-xgboost_fit <- last_fit(final_wkflow, split)
+xgboost_fit <- last_fit(final_wkflow, split, metric = "mn_log_loss")
 ```
 
 # Check performance
 
 ```{r}
-collect_metrics(xgboost_fit) %>%
+collect_metrics(xgboost_fit, metric = "mn_log_loss") %>%
   gt()
 ```
 
@@ -864,6 +867,28 @@ have_scored <- cbind(
   select(id, damaged = .pred_1)
 ```
 
+# Compare distribution for Test vs Holdout
+
+```{r}
+xgboost_preds %>%
+  select(damaged = .pred_1) %>% 
+  mutate(pop = 'Test') %>% 
+  union_all(have_scored) %>% 
+  mutate(pop = if_else(is.na(pop), 'Holdout', pop)) %>% 
+ggplot(aes(damaged, fill = pop, colour= pop)) +
+  geom_density(alpha = 0.3)
+  
+```
+
+# Use the damaged rate instead
+
+```{r}
+use_mean <- mean(have_scored$damaged)
+
+have_scored <- have_scored %>% 
+  mutate(damaged = use_mean)
+```
+
 # Output submission
 
 ```{r}
@@ -872,11 +897,11 @@ write_csv(have_scored, 's01e02/submission.csv')
 
 # Outcome
 
-Score of 0.42
+Score of 0.42.  Not great.  Can get 0.186 from using 0.06607 probability for all.  Wonder if there's something wrong with the files.
 
 # Learnings
 
-- Check whether the submission is for class or probability and use `type = 'prob'` in the `predict()` statement for the latter. `r emo::ji('palm')`
+- Check whether the submission is for class or probability and use `type = 'prob'` in the `predict()` statement for the latter.
 - Used several new steps
 
 # More to learn
