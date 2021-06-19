@@ -2,12 +2,6 @@
 title: SLICED s01e01
 author: Jo Dudding
 output: 
-  github_document:
-    toc: true
-    html_preview: false
-    includes:
-      in_header: "header.md"
-      after_body: "footer.md"
   html_document:
     theme: united
     highlight: kate

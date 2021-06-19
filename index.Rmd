@@ -1,0 +1,79 @@
+---
+output: 
+  html_document:
+    theme: united
+    highlight: kate
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{css, echo = FALSE}
+h2, h3, h4, h5, h6, legend {
+  color: #302df0;
+}
+
+h1 {
+    font-size: 38px;
+    background-color: #e946a5;
+    color: #ffffff;
+    margin-bottom: 20px;
+    padding: 9.5px;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    border-radius: 10px;
+}
+
+pre {
+  background-color: #cccccc;
+}
+
+a {
+  color: #129875;
+}
+
+.hljs-comment {
+    color: #68e199;
+    font-style: 68e199;
+}
+
+.list-group-item.active, .list-group-item.active:hover, .list-group-item.active:focus {
+    z-index: 2;
+    color: #ffffff;
+    background-color: #68e199;
+    border-color: #68e199;
+}
+```
+
+
+![](sliced-header.png)
+
+Exploring the data used for Sliced.
+
+# Season 1 - June 2021
+
+## s01e01
+
+### Predict the popularity of board games on BoardGameGeek.com
+
+- [Code](s01e01.rmd)
+- [HTML Output](s01e01.html)
+
+## s01e02
+
+### Predict whether an aircraft strike with wildlife causes damage 
+
+- [Code](s01e02.rmd)
+- [HTML Output](s01e02.html)
+
+
+# Kaggle
+
+## Titanic
+
+Also included in the repo is the Kaggle Titanic competition
+
+- [Code](titanic.rmd)
+- [HTML Output](titanic.html)
