@@ -11,8 +11,6 @@ output:
     includes:
       in_header: "header.html"
       after_body: "footer.html"
-    keep_md: true  
-
 ---
 
 ```{r setup, include = FALSE, echo = FALSE}
