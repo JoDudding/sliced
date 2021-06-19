@@ -203,8 +203,12 @@ update_geom_defaults("line", list(colour = bar_colour))
 # Read files
 
 ```{r}
-to_build <- read_csv("tab-playground-2021-06/train.csv", guess_max = 200000)  %>% 
+to_build <- read_csv("tab-playground-2021-06/train.csv", guess_max = 200000) %>% 
+  # sample of 15% to make it run faster
+  slice_sample(prop = .15) %>% 
+  mutate(target = factor(target)) %>% 
   glimpse()
+
 to_score <- read_csv("tab-playground-2021-06/test.csv", guess_max = 200000) %>% 
   glimpse()
 ```
@@ -255,9 +259,7 @@ This gives a score of 1.89555 on the public leaderboard.  The top scorers are ar
 
 Evaluation is multi-class logarithmic loss (`mn_log_loss`).
 
-```{r}
-targ_metric <- metric_set(mn_log_loss)
-```
+
 # Explore data
 
 ```{r}
@@ -316,8 +318,6 @@ to_build %>%
 set.seed(369)
 
 split <- to_build %>% 
-  # sample of 15% to make it run faster
-  slice_sample(prop = .15) %>% 
   initial_split(strata = target)
   
 train <- training(split)
@@ -330,14 +330,6 @@ test <- testing(split)
 set.seed(640)
 tune_folds <- train %>% 
   #slice_sample(prop = .15) %>% 
-  vfold_cv(5)
-```
-
-## Create folds for resamples
-
-```{r}
-set.seed(733)
-train_folds <- train %>% 
   vfold_cv(5)
 ```
 
@@ -354,7 +346,7 @@ use_xgboost(target ~ ., data = train)
 ```{r}
 xgboost_recipe <- 
   recipe(formula = target ~ ., data = train) %>% 
-  step_string2factor(one_of(target)) %>% 
+  #step_string2factor(one_of(target)) %>% 
   step_zv(all_predictors()) 
 
 xgboost_spec <- 
@@ -369,11 +361,24 @@ xgboost_workflow <-
   add_model(xgboost_spec) 
 ```
 
+## Check recipe
+
+```{r}
+prepped <- prep(xgboost_recipe)
+baked <- bake(prepped, new_data = NULL) 
+
+skim(baked)
+```
+
+
 # Tuning
 
 ## Tune folds
 
 ```{r}
+
+targ_metric = metric_set(mn_log_loss)
+
 set.seed(83195)
 xgboost_tune <-
   tune_grid(xgboost_workflow, resamples = tune_folds, grid = 9, metrics = targ_metric)
@@ -382,8 +387,9 @@ xgboost_tune <-
 ## Tuning outcome
 
 ```{r, eval = FALSE}
-show_best(xgboost_tune, metric = "mn_log_loss") %>%
+show_best(xgboost_tune, metric = "targ_metric") %>%
   gt()
+
 autoplot(xgboost_tune) +
   theme_bw()
 ```
@@ -393,39 +399,30 @@ autoplot(xgboost_tune) +
 ```{r}
 final_wkflow <- xgboost_workflow #%>%
   finalize_workflow(select_best(xgboost_tune, metric = targ_metric))
+  
 final_wkflow
 ```
 
 # Fit model
 
-## Fit resamples
+## Fit workflow to split
 
 ```{r}
-xgboost_rs <- last_resamples(final_wkflow, resamples = train_folds, metric = targ_metric)
-```
-
-## Collect metrics for resamples
-
-```{r}
-collect_metrics(xgboost_rs)
-```
-
-## Fit on test
-
-```{r}
-final_fitted <- last_fit(xgboost_rs, split)
+xgboost_fit <- last_fit(final_wkflow, split, metric = targ_metric)
 ```
 
 ## Metrics for test
 
 ```{r}
-collect_metrics(final_fitted)
+collect_metrics(xgboost_fit)
 ```
+
+> Can we do a ROC curve for each class?  What sort of charts should go here?
 
 ## Save model
 
 ```{r}
-model <- final_fitted$.workflow[[1]]
+model <- xgboost_fit$.workflow[[1]]
 
 saveRDS(model, 'tab-playground-2021-06/model.rds')
 
